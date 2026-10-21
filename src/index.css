@@ -1,0 +1,146 @@
+/* Temporary functional styling for Phase 4. The final colour system comes later. */
+:root {
+  font-family: system-ui, sans-serif;
+  color: #1a1a1a;
+  background: #ffffff;
+}
+
+body {
+  margin: 0;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+
+.grid {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #888;
+  touch-action: none;
+  user-select: none;
+}
+
+.grid-editable {
+  cursor: crosshair;
+}
+
+.cell {
+  stroke: #d0d0d0;
+  stroke-width: 0.03;
+}
+
+.cell-empty { fill: #ffffff; }
+.cell-blocked { fill: #333333; }
+.cell-closed { fill: #b9d3ee; }
+.cell-frontier { fill: #9be39b; }
+.cell-current { fill: #ffb347; }
+.cell-path { fill: #ffe14d; }
+
+.parent-links line {
+  stroke: #4a6a8a;
+  stroke-width: 0.05;
+  opacity: 0.6;
+}
+
+.final-path {
+  fill: none;
+  stroke: #d12f2f;
+  stroke-width: 0.18;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.endpoint text {
+  font-size: 0.6px;
+  font-weight: bold;
+  fill: #ffffff;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.endpoint-start rect,
+.legend-start { fill: #1f7a1f; }
+.endpoint-goal rect,
+.legend-goal { fill: #b01e8f; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  font-size: 0.85rem;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend svg {
+  width: 14px;
+  height: 14px;
+}
+
+.controls,
+.edit-mode {
+  margin: 8px 0;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+button[aria-pressed="true"] {
+  font-weight: bold;
+  outline: 2px solid #333;
+}
+
+.edit-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #ccc;
+}
+
+.hint {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.stats dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+
+.stats dt {
+  font-weight: bold;
+}
+
+.stats dd {
+  margin: 0;
+}
+
+.no-path {
+  color: #b00020;
+  font-weight: bold;
+}

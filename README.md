@@ -2,9 +2,9 @@
 
 An interactive educational visualization of the A* pathfinding algorithm, built for the AERIS Autonomous Aerial Vehicles TKS Build. The finished product will let users watch A* explore a grid, inspect g/h/f values and parent links, and see the final path emerge.
 
-## Phase 3: core engine (current)
+## Phase 3: core engine
 
-Phase 3 implements a deterministic, independently tested A* engine in `src/algorithm/`. It has no dependency on React. Each run returns the path, its cost, statistics, and a **search trace** with one `SearchStep` per expanded node. A later UI can replay the search from the trace without inventing any algorithm behaviour. The React app is currently a placeholder.
+Phase 3 implements a deterministic, independently tested A* engine in `src/algorithm/`. It has no dependency on React. Each run returns the path, its cost, statistics, and a **search trace** with one `SearchStep` per expanded node. A later UI can replay the search from the trace without inventing any algorithm behaviour.
 
 | File | Responsibility |
 | --- | --- |
@@ -27,13 +27,35 @@ Phase 3 implements a deterministic, independently tested A* engine in `src/algor
 
 Each neighbour evaluation in the trace has one of these kinds: `discovered`, `improved` (with old and new `g`, `f` and parent), `unchanged`, `blocked`, `corner-blocked` (with the blocking cells), or `already-closed`. Out-of-bounds neighbours are not recorded.
 
+## Phase 4: functional simulation (current)
+
+A basic SVG simulation of a 32×20 grid, driven entirely by the engine's trace:
+
+```
+Grid configuration → findPath (once per run) → SearchResult.trace
+  → playback controller (step index, status, speed) → visual-state adapter → SVG renderer
+```
+
+- `src/simulation/`: pure, React-free logic.
+  - `config.ts`: the default map and the edit rules. Start and goal cannot be blocked; they must stay in bounds, traversable and distinct.
+  - `playback.ts`: the Start, Pause, Step, Tick, Reset and Speed transitions.
+  - `controller.ts`: combines editing and playback. Any map edit discards the result.
+  - `visualState.ts`: reads the frontier, closed set, current node, parent links and the final path for a step.
+- `src/components/`: the renderer and controls. They never compute costs, frontier membership, parents or routes.
+- **Controls:**
+  - **Start** runs A* once and replays its trace; when paused, it resumes.
+  - **Step** shows exactly one `SearchStep`.
+  - **Reset** returns to the pre-search state.
+  - **Speed** (0.5×–4×) only changes the replay rate. At 1× the delay is 450 ms per step.
+- **Editing:** while playback is not running, choose Obstacle, Start or Goal mode and click the grid. In Obstacle mode you can click-drag to paint. Any edit returns the simulation to idle.
+
 ## Running
 
 ```bash
 npm install
 npm test        # Vitest suite
 npm run build   # type-check + production build
-npm run dev     # placeholder app
+npm run dev     # interactive simulation
 ```
 
 The tests cover open grids, obstacle detours, diagonal cost, corner cutting, unreachable goals, start = goal, parent improvement, determinism, tie-breaking, trace integrity, invalid input, and agreement with a reference Dijkstra solver on fixed and seeded random maps.
@@ -43,5 +65,5 @@ The tests cover open grids, obstacle detours, diagonal cost, corner cutting, unr
 This Build currently optimizes path length on an abstract 2D grid. It is not a complete autonomous-drone navigation system.
 
 - There is no terrain weighting, energy, wind, battery or vehicle dynamics.
-- There is no visualization yet; the UI starts in a later phase.
+- The UI is intentionally basic. Node inspection and the polished design come in later phases.
 - Every step stores a full snapshot of the frontier and closed set. This is fine for teaching-sized grids, but it is not meant for very large maps.
