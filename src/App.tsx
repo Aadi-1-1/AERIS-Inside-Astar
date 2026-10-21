@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Coordinate } from "./algorithm";
 import { DecisionPanel } from "./components/DecisionPanel";
 import { Legend } from "./components/Legend";
@@ -13,7 +13,12 @@ import type { PlaybackAction, Tool } from "./simulation/types";
 import { useCompletionStage, usePrefersReducedMotion } from "./simulation/useMotion";
 import { useSimulation } from "./simulation/useSimulation";
 
-export default function App() {
+interface Props {
+  /** False while another page is shown; a running search is paused rather than left playing unseen. */
+  active?: boolean;
+}
+
+export default function App({ active = true }: Props) {
   const { state, dispatch, visual, history } = useSimulation();
   const { playback, config, selected } = state;
   const [tool, setTool] = useState<Tool>("obstacle");
@@ -47,6 +52,11 @@ export default function App() {
 
   // Loading a search switches to Inspect so clicks cannot accidentally edit (and discard) it;
   // Reset returns to editing.
+  const playing = playback.status === "playing";
+  useEffect(() => {
+    if (!active && playing) dispatch({ type: "pause" });
+  }, [active, playing, dispatch]);
+
   const handlePlayback = (action: PlaybackAction) => {
     if ((action.type === "start" || action.type === "step") && playback.status === "idle") setTool("inspect");
     if (action.type === "reset" && tool === "inspect") setTool("obstacle");
@@ -57,9 +67,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div>
-          <h1>
-            AERIS <span className="title-sep">/</span> <span className="title-sub">Inside A*</span>
-          </h1>
+          <h1 className="sr-only">A* simulation</h1>
           <p className="subtitle">
             Watch A* search a grid one expansion at a time. Every frame is replayed from the engine's recorded trace.
           </p>
