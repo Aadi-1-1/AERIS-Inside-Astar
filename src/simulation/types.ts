@@ -24,9 +24,11 @@ export interface PlaybackState {
 }
 
 export type PlaybackAction =
-  | { readonly type: "start" }
+  /** `result` is required when starting from idle; it is ignored when resuming. */
+  | { readonly type: "start"; readonly result?: SearchResult }
   | { readonly type: "pause" }
-  | { readonly type: "step" }
+  /** `result` is required when stepping from idle; it is ignored otherwise. */
+  | { readonly type: "step"; readonly result?: SearchResult }
   | { readonly type: "tick" }
   | { readonly type: "reset" }
   | { readonly type: "setSpeed"; readonly speed: Speed };
@@ -36,7 +38,20 @@ export type EditAction =
   | { readonly type: "moveStart"; readonly coord: Coordinate }
   | { readonly type: "moveGoal"; readonly coord: Coordinate };
 
-export type SimulationAction = PlaybackAction | EditAction;
+/** A finished search together with the exact config it was computed from. */
+export interface LoadedSearch {
+  readonly config: SimulationConfig;
+  readonly result: SearchResult;
+}
+
+/**
+ * Start/Step carry a search computed *before* dispatch, so reducers never run A*.
+ * A search whose config is not the current one is stale and is ignored.
+ */
+export type SimulationAction =
+  | Exclude<PlaybackAction, { type: "start" | "step" }>
+  | { readonly type: "start" | "step"; readonly search?: LoadedSearch }
+  | EditAction;
 
 export interface SimulationState {
   readonly config: SimulationConfig;

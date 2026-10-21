@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { findPath, parseMap, type SearchResult } from "../algorithm";
 import { initialPlayback, playbackReducer, stepDelayMs } from "./playback";
 import type { PlaybackAction, PlaybackState } from "./types";
@@ -11,10 +11,10 @@ function problem(rows: string[]) {
 const found = findPath(problem(["S..", ".#.", "..G"]));
 const noPath = findPath(problem(["S#.", "##.", "..G"]));
 
+/** Applies actions, attaching `result` to Start/Step the way the controller does after searching. */
 function run(actions: PlaybackAction[], result: SearchResult = found, state: PlaybackState = initialPlayback()) {
-  const search = vi.fn(() => result);
-  const final = actions.reduce((s, a) => playbackReducer(s, a, search), state);
-  return { state: final, search };
+  const withResult = (a: PlaybackAction): PlaybackAction => (a.type === "start" || a.type === "step" ? { ...a, result } : a);
+  return { state: actions.map(withResult).reduce(playbackReducer, state) };
 }
 
 describe("playback controller", () => {
@@ -22,19 +22,23 @@ describe("playback controller", () => {
     expect(initialPlayback()).toEqual({ result: null, stepIndex: 0, status: "idle", speed: 1 });
   });
 
-  it("Start runs the search once and begins playing from step zero", () => {
-    const { state, search } = run([{ type: "start" }]);
-    expect(search).toHaveBeenCalledTimes(1);
+  it("Start loads the supplied result and begins playing from step zero", () => {
+    const { state } = run([{ type: "start" }]);
     expect(state).toMatchObject({ status: "playing", stepIndex: 0, result: found });
   });
 
+  it("Start or Step from idle without a result is a no-op", () => {
+    const idle = initialPlayback();
+    expect(playbackReducer(idle, { type: "start" })).toBe(idle);
+    expect(playbackReducer(idle, { type: "step" })).toBe(idle);
+  });
+
   it("Step advances exactly one expansion and pauses", () => {
-    const { state, search } = run([{ type: "step" }]);
-    expect(search).toHaveBeenCalledTimes(1);
+    const { state } = run([{ type: "step" }]);
     expect(state).toMatchObject({ status: "paused", stepIndex: 1 });
-    const { state: next, search: again } = run([{ type: "step" }], found, state);
-    expect(again).not.toHaveBeenCalled();
+    const { state: next } = run([{ type: "step" }], noPath, state);
     expect(next.stepIndex).toBe(2);
+    expect(next.result).toBe(found); // a loaded result is never replaced mid-playback
   });
 
   it("ticks advance only while playing", () => {
@@ -45,10 +49,11 @@ describe("playback controller", () => {
     expect(paused.result).toBe(playing.result);
   });
 
-  it("Start after Pause resumes without rerunning the search", () => {
-    const { state, search } = run([{ type: "start" }, { type: "tick" }, { type: "pause" }, { type: "start" }, { type: "tick" }]);
-    expect(search).toHaveBeenCalledTimes(1);
+  it("Start after Pause resumes the loaded result", () => {
+    const { state: paused } = run([{ type: "start" }, { type: "tick" }, { type: "pause" }]);
+    const { state } = run([{ type: "start" }, { type: "tick" }], noPath, paused);
     expect(state).toMatchObject({ status: "playing", stepIndex: 2 });
+    expect(state.result).toBe(found);
   });
 
   it("enters complete after the last trace step and stops advancing", () => {
@@ -72,8 +77,7 @@ describe("playback controller", () => {
 
   it("changing speed never reruns the search or moves playback", () => {
     const { state: before } = run([{ type: "start" }, { type: "tick" }]);
-    const { state, search } = run([{ type: "setSpeed", speed: 2 }], found, before);
-    expect(search).not.toHaveBeenCalled();
+    const { state } = run([{ type: "setSpeed", speed: 2 }], found, before);
     expect(state).toEqual({ ...before, speed: 2 });
     expect(stepDelayMs(2)).toBe(stepDelayMs(1) / 2);
   });

@@ -1,14 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { findPath } from "../algorithm";
 import { createDefaultConfig, moveGoal, moveStart, setBlocked } from "./config";
-import { createSimulationReducer, initialSimulation } from "./controller";
+import { initialSimulation, prepareAction, simulationReducer } from "./controller";
 import { initialPlayback } from "./playback";
 import type { SimulationAction, SimulationState } from "./types";
 
+/** Mirrors useSimulation's dispatch: prepare (may search) once, then reduce. */
 function setup() {
   const search = vi.fn(findPath);
-  const reducer = createSimulationReducer(search);
-  const apply = (state: SimulationState, ...actions: SimulationAction[]) => actions.reduce(reducer, state);
+  const apply = (state: SimulationState, ...actions: SimulationAction[]) =>
+    actions.reduce((s, a) => simulationReducer(s, prepareAction(s, a, search)), state);
   return { search, apply, initial: initialSimulation(createDefaultConfig()) };
 }
 
@@ -64,6 +65,46 @@ describe("simulation controller: invalidation", () => {
       { type: "tick" },
     );
     expect(search).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("simulation controller: A* runs outside the reducer", () => {
+  it("a single Start invokes the engine exactly once", () => {
+    const { apply, initial, search } = setup();
+    const started = apply(initial, { type: "start" });
+    expect(search).toHaveBeenCalledTimes(1);
+    expect(started.playback).toMatchObject({ status: "playing", stepIndex: 0 });
+    expect(started.playback.result).toBe(search.mock.results[0]!.value);
+  });
+
+  it("replaying the reducer (as StrictMode does) never invokes the engine", () => {
+    const search = vi.fn(findPath);
+    const initial = initialSimulation(createDefaultConfig());
+    const action = prepareAction(initial, { type: "start" }, search);
+    expect(search).toHaveBeenCalledTimes(1);
+    const first = simulationReducer(initial, action);
+    const second = simulationReducer(initial, action);
+    expect(search).toHaveBeenCalledTimes(1);
+    expect(second).toEqual(first);
+    expect(second.playback.result).toBe(first.playback.result);
+  });
+
+  it("prepareAction does not search when a result is already loaded or the action needs none", () => {
+    const { apply, initial, search } = setup();
+    const paused = apply(initial, { type: "step" });
+    search.mockClear();
+    for (const type of ["start", "step"] as const) expect(prepareAction(paused, { type }, search)).toEqual({ type });
+    for (const action of [{ type: "pause" }, { type: "reset" }, { type: "tick" }, { type: "setSpeed", speed: 2 }] as const) {
+      expect(prepareAction(initial, action, search)).toBe(action);
+    }
+    expect(search).not.toHaveBeenCalled();
+  });
+
+  it("ignores a search computed for a config that is no longer current", () => {
+    const initial = initialSimulation(createDefaultConfig());
+    const stale = prepareAction(initial, { type: "start" });
+    const edited = simulationReducer(initial, { type: "setBlocked", coord: { x: 0, y: 0 }, blocked: true });
+    expect(simulationReducer(edited, stale)).toBe(edited);
   });
 });
 
