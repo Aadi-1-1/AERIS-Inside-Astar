@@ -6,7 +6,10 @@ import { cellKey } from "../simulation/visualState";
 interface Props {
   config: SimulationConfig;
   visual: VisualState;
-  editable: boolean;
+  /** Inspected node and its parent at the displayed step, both supplied by the inspector. */
+  selected: Coordinate | null;
+  selectedParent: Coordinate | null;
+  cursor: "crosshair" | "pointer" | "default";
   /** `drag` is fired for each further cell entered while the pointer stays down. */
   onCellPointer: (coord: Coordinate, phase: "down" | "drag") => void;
 }
@@ -14,7 +17,7 @@ interface Props {
 const center = (c: Coordinate) => ({ x: c.x + 0.5, y: c.y + 0.5 });
 
 /** SVG view of the map plus the visual state. One viewBox unit = one cell. */
-export function SimulationGrid({ config, visual, editable, onCellPointer }: Props) {
+export function SimulationGrid({ config, visual, selected, selectedParent, cursor, onCellPointer }: Props) {
   const { grid, start, goal } = config;
   const svgRef = useRef<SVGSVGElement>(null);
   const lastCell = useRef<string | null>(null);
@@ -27,7 +30,7 @@ export function SimulationGrid({ config, visual, editable, onCellPointer }: Prop
   };
 
   const handleDown = (event: PointerEvent<SVGSVGElement>) => {
-    if (!editable || event.button !== 0) return;
+    if (event.button !== 0) return;
     const coord = cellAt(event);
     if (!coord) return;
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -58,7 +61,8 @@ export function SimulationGrid({ config, visual, editable, onCellPointer }: Prop
   return (
     <svg
       ref={svgRef}
-      className={`grid${editable ? " grid-editable" : ""}`}
+      className="grid"
+      style={{ cursor }}
       viewBox={`0 0 ${grid.width} ${grid.height}`}
       role="img"
       aria-label="A* search grid"
@@ -78,10 +82,16 @@ export function SimulationGrid({ config, visual, editable, onCellPointer }: Prop
       {visual.path && (
         <polyline className="final-path" points={visual.path.map((c) => `${c.x + 0.5},${c.y + 0.5}`).join(" ")} />
       )}
+      {selectedParent && <SelectionRing coord={selectedParent} className="selected-parent" />}
+      {selected && <SelectionRing coord={selected} className="selected-node" />}
       <Endpoint coord={start} label="S" className="endpoint-start" />
       <Endpoint coord={goal} label="G" className="endpoint-goal" />
     </svg>
   );
+}
+
+function SelectionRing({ coord, className }: { coord: Coordinate; className: string }) {
+  return <rect className={className} x={coord.x + 0.06} y={coord.y + 0.06} width={0.88} height={0.88} />;
 }
 
 function Endpoint({ coord, label, className }: { coord: Coordinate; label: string; className: string }) {

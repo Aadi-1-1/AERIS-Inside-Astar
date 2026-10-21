@@ -71,6 +71,14 @@ describe("deriveVisualState", () => {
     expect([...visual.cellRoles.values()]).not.toContain("path");
   });
 
+  it("discovered count is open + closed and ends at stats.discoveredNodes", () => {
+    for (let k = 1; k <= result.trace.length; k++) {
+      const step = result.trace[k - 1]!;
+      expect(deriveVisualState(at(k)).discoveredCount).toBe(step.frontier.length + step.closed.length);
+    }
+    expect(deriveVisualState(at(result.trace.length)).discoveredCount).toBe(result.stats.discoveredNodes);
+  });
+
   it("does not mutate the trace", () => {
     const snapshot = structuredClone(result.trace);
     for (let k = 0; k <= result.trace.length; k++) deriveVisualState(at(k));

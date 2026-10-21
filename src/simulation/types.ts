@@ -9,6 +9,9 @@ export interface SimulationConfig {
 
 export type EditMode = "obstacle" | "start" | "goal";
 
+/** The active grid tool: inspecting nodes, or one of the map edit modes. */
+export type Tool = "inspect" | EditMode;
+
 export const SPEEDS = [0.5, 1, 2, 4] as const;
 export type Speed = (typeof SPEEDS)[number];
 
@@ -38,6 +41,11 @@ export type EditAction =
   | { readonly type: "moveStart"; readonly coord: Coordinate }
   | { readonly type: "moveGoal"; readonly coord: Coordinate };
 
+/** Inspector selection: which discovered node the decision panel is frozen on. */
+export type SelectionAction =
+  | { readonly type: "select"; readonly coord: Coordinate }
+  | { readonly type: "clearSelection" };
+
 /** A finished search together with the exact config it was computed from. */
 export interface LoadedSearch {
   readonly config: SimulationConfig;
@@ -51,11 +59,14 @@ export interface LoadedSearch {
 export type SimulationAction =
   | Exclude<PlaybackAction, { type: "start" | "step" }>
   | { readonly type: "start" | "step"; readonly search?: LoadedSearch }
-  | EditAction;
+  | EditAction
+  | SelectionAction;
 
 export interface SimulationState {
   readonly config: SimulationConfig;
   readonly playback: PlaybackState;
+  /** Node pinned in the inspector; null = live/summary. Cleared whenever the result changes. */
+  readonly selected: Coordinate | null;
 }
 
 /** How the search tree connects: an edge from a node's current parent to the node. */
@@ -76,6 +87,8 @@ export interface VisualState {
   readonly frontier: readonly NodeSnapshot[];
   /** Closed set after this step, in expansion order. */
   readonly closed: readonly Coordinate[];
+  /** Nodes discovered so far: every discovered node is either open or closed. */
+  readonly discoveredCount: number;
   readonly parentLinks: readonly ParentLink[];
   /** SearchResult.path, only once playback has reached the end of a successful search. */
   readonly path: readonly Coordinate[] | null;

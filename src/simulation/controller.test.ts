@@ -108,6 +108,37 @@ describe("simulation controller: A* runs outside the reducer", () => {
   });
 });
 
+describe("simulation controller: inspector selection", () => {
+  const node = { x: 3, y: 4 };
+
+  it("cannot select before a search is loaded", () => {
+    const { apply, initial } = setup();
+    expect(apply(initial, { type: "select", coord: node })).toBe(initial);
+  });
+
+  it("keeps the selection while playback moves forward or changes speed", () => {
+    const { apply, initial } = setup();
+    const selected = apply(initial, { type: "start" }, { type: "tick" }, { type: "select", coord: node });
+    expect(selected.selected).toEqual(node);
+    const later = apply(selected, { type: "tick" }, { type: "pause" }, { type: "step" }, { type: "setSpeed", speed: 4 }, { type: "start" });
+    expect(later.selected).toEqual(node);
+  });
+
+  it("clears on Back to Live, Reset, a map edit, and a new search", () => {
+    const { apply, initial } = setup();
+    const selected = apply(initial, { type: "step" }, { type: "select", coord: node });
+    expect(apply(selected, { type: "clearSelection" }).selected).toBeNull();
+    expect(apply(selected, { type: "reset" }).selected).toBeNull();
+    expect(apply(selected, { type: "setBlocked", coord: { x: 0, y: 0 }, blocked: true }).selected).toBeNull();
+    expect(apply(selected, { type: "moveStart", coord: { x: 2, y: 2 } }).selected).toBeNull();
+    expect(apply(selected, { type: "moveGoal", coord: { x: 30, y: 2 } }).selected).toBeNull();
+    // Reset then Start loads a new result; a selection made in between cannot survive it.
+    const rerun = apply(selected, { type: "reset" }, { type: "select", coord: node }, { type: "start" });
+    expect(rerun.selected).toBeNull();
+    expect(rerun.playback.result).not.toBe(selected.playback.result);
+  });
+});
+
 describe("config edit rules", () => {
   const config = createDefaultConfig();
 
