@@ -21,10 +21,11 @@ import {
 } from "./types";
 
 /**
- * Costs closer than this are treated as equal. Diagonal costs involve sqrt(2), so two
- * routes of identical true length can differ in the last floating-point bits depending on
- * summation order. Without a tolerance such noise could register as a fake "improvement"
- * or flip a tie-break. Real cost differences on a grid are many orders of magnitude larger.
+ * A route must be cheaper by more than this to replace a node's g and parent. Diagonal
+ * costs involve sqrt(2), so two routes of identical true length can differ in the last
+ * floating-point bits depending on summation order; without a tolerance that noise could
+ * register as a fake "improvement". Real cost differences on a grid are far larger.
+ * Used only for the improvement check, never in the open-set ordering.
  */
 export const COST_EPSILON = 1e-9;
 
@@ -38,10 +39,14 @@ interface NodeState {
   parent: NodeState | null;
 }
 
-/** Open-set ordering: lowest f, then lowest h, then earliest discovery. */
+/**
+ * Open-set ordering: lowest f, then lowest h, then earliest discovery, compared on exact
+ * numeric values. Exact comparison keeps this a strict total order (transitive, and
+ * discovery order is unique), which the heap needs to stay valid and deterministic.
+ */
 function compareNodes(a: NodeState, b: NodeState): number {
-  if (Math.abs(a.f - b.f) > COST_EPSILON) return a.f - b.f;
-  if (Math.abs(a.h - b.h) > COST_EPSILON) return a.h - b.h;
+  if (a.f !== b.f) return a.f - b.f;
+  if (a.h !== b.h) return a.h - b.h;
   return a.discoveryOrder - b.discoveryOrder;
 }
 

@@ -207,9 +207,8 @@ describe("A* — tie-breaking", () => {
       for (let i = 1; i < step.frontier.length; i++) {
         const a = step.frontier[i - 1]!;
         const b = step.frontier[i]!;
-        const ordered =
-          a.f < b.f - 1e-9 ||
-          (Math.abs(a.f - b.f) <= 1e-9 && (a.h < b.h - 1e-9 || (Math.abs(a.h - b.h) <= 1e-9 && a.discoveryOrder < b.discoveryOrder)));
+        // The heap uses exact numeric comparison (a strict total order), so the check does too.
+        const ordered = a.f < b.f || (a.f === b.f && (a.h < b.h || (a.h === b.h && a.discoveryOrder < b.discoveryOrder)));
         expect(ordered).toBe(true);
       }
       // The node expanded at step k+1 is the head of the frontier after step k.
