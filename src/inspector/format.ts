@@ -10,6 +10,11 @@ export function formatCost(value: number): string {
   return value.toFixed(3);
 }
 
+/** Enough digits to show where two values that look equal at 3 decimals actually differ. */
+export function formatExact(value: number): string {
+  return String(Number(value.toPrecision(12)));
+}
+
 export function formatCoord(c: Coordinate | null): string {
   return c ? `(${c.x}, ${c.y})` : "none";
 }
