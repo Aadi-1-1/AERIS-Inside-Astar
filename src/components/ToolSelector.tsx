@@ -20,21 +20,23 @@ interface Props {
 export function ToolSelector({ tool, editingLocked, inspectAvailable, onChange }: Props) {
   return (
     <fieldset className="tool-selector">
-      <legend>Grid tool</legend>
-      {TOOLS.map((t) => (
-        <label key={t.value}>
-          <input
-            type="radio"
-            name="grid-tool"
-            value={t.value}
-            checked={tool === t.value}
-            disabled={t.value === "inspect" ? !inspectAvailable : editingLocked}
-            onChange={() => onChange(t.value)}
-          />
-          {t.label}
-        </label>
-      ))}
-      {editingLocked && <span className="hint">Pause or reset to edit the map.</span>}
+      <legend className="eyebrow">Grid tool</legend>
+      <div className="segmented">
+        {TOOLS.map((t, i) => (
+          <label key={t.value} className={i === 1 ? "segment-gap" : undefined}>
+            <input
+              type="radio"
+              name="grid-tool"
+              value={t.value}
+              checked={tool === t.value}
+              disabled={t.value === "inspect" ? !inspectAvailable : editingLocked}
+              onChange={() => onChange(t.value)}
+            />
+            <span>{t.label}</span>
+          </label>
+        ))}
+      </div>
+      {editingLocked && <span className="hint">Pause or reset to edit the map</span>}
     </fieldset>
   );
 }

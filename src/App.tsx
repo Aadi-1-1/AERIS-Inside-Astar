@@ -1,13 +1,16 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Coordinate } from "./algorithm";
 import { DecisionPanel } from "./components/DecisionPanel";
 import { Legend } from "./components/Legend";
 import { PlaybackControls } from "./components/PlaybackControls";
+import { SearchStatus } from "./components/SearchStatus";
 import { SimulationGrid } from "./components/SimulationGrid";
 import { SimulationStats } from "./components/SimulationStats";
 import { ToolSelector } from "./components/ToolSelector";
 import { nodeStateAt } from "./inspector/nodeHistory";
+import { deriveStepMotion, tierParentLinks } from "./simulation/motion";
 import type { PlaybackAction, Tool } from "./simulation/types";
+import { useCompletionStage, usePrefersReducedMotion } from "./simulation/useMotion";
 import { useSimulation } from "./simulation/useSimulation";
 
 export default function App() {
@@ -18,6 +21,12 @@ export default function App() {
   const paintValue = useRef(true);
   const editingLocked = playback.status === "playing";
   const selectedState = selected && history ? nodeStateAt(history, selected, playback.stepIndex) : null;
+
+  // Animation inputs are read from the displayed SearchStep; A* is never rerun for visuals.
+  const motion = useMemo(() => deriveStepMotion(playback.result, playback.stepIndex), [playback.result, playback.stepIndex]);
+  const links = useMemo(() => tierParentLinks(visual, motion), [visual, motion]);
+  const reducedMotion = usePrefersReducedMotion();
+  const stage = useCompletionStage(visual.path, reducedMotion);
 
   const handleCellPointer = (coord: Coordinate, phase: "down" | "drag") => {
     if (tool === "inspect") {
@@ -45,40 +54,76 @@ export default function App() {
   };
 
   return (
-    <main className="app">
-      <h1>AERIS — Inside A*</h1>
-      <div className="workspace">
-        <section className="simulation-area">
-          <ToolSelector
-            tool={tool}
-            editingLocked={editingLocked}
-            inspectAvailable={playback.result !== null}
-            onChange={setTool}
+    <div className="app">
+      <header className="app-header">
+        <div>
+          <h1>
+            AERIS <span className="title-sep">/</span> <span className="title-sub">Inside A*</span>
+          </h1>
+          <p className="subtitle">
+            Watch A* search a grid one expansion at a time. Every frame is replayed from the engine's recorded trace.
+          </p>
+        </div>
+      </header>
+
+      <main className="workspace">
+        <section className="simulation" aria-label="Simulation">
+          <div className="sim-toolbar">
+            <ToolSelector
+              tool={tool}
+              editingLocked={editingLocked}
+              inspectAvailable={playback.result !== null}
+              onChange={setTool}
+            />
+            <SearchStatus status={playback.status} stage={stage} result={playback.result} />
+          </div>
+
+          <div className="grid-frame">
+            <SimulationGrid
+              config={config}
+              visual={visual}
+              motion={motion}
+              links={links}
+              status={playback.status}
+              stage={stage}
+              selected={selectedState?.node ? selected : null}
+              selectedParent={selectedState?.node?.parent ?? null}
+              cursor={tool === "inspect" ? "pointer" : editingLocked ? "default" : "crosshair"}
+              onCellPointer={handleCellPointer}
+            />
+            {playback.status === "no-path" && (
+              <div className="grid-banner" aria-hidden="true">
+                <strong>No valid route found</strong>
+                <span>The frontier emptied after {visual.totalSteps} expansions without reaching the goal.</span>
+              </div>
+            )}
+          </div>
+
+          <PlaybackControls
+            status={playback.status}
+            speed={playback.speed}
+            stepNumber={visual.stepNumber}
+            totalSteps={visual.totalSteps}
+            dispatch={handlePlayback}
           />
-          <SimulationGrid
-            config={config}
-            visual={visual}
-            selected={selectedState?.node ? selected : null}
-            selectedParent={selectedState?.node?.parent ?? null}
-            cursor={tool === "inspect" ? "pointer" : editingLocked ? "default" : "crosshair"}
-            onCellPointer={handleCellPointer}
-          />
-          <Legend />
+
+          <div className="sim-footer">
+            <SimulationStats status={playback.status} visual={visual} result={playback.result} />
+            <Legend />
+          </div>
         </section>
+
         <DecisionPanel
           result={playback.result}
           history={history}
           stepIndex={playback.stepIndex}
           status={playback.status}
           visual={visual}
+          motion={motion}
           selected={selected}
           onBackToLive={() => dispatch({ type: "clearSelection" })}
         />
-      </div>
-      <footer className="bottom-bar">
-        <PlaybackControls status={playback.status} speed={playback.speed} dispatch={handlePlayback} />
-        <SimulationStats status={playback.status} visual={visual} result={playback.result} />
-      </footer>
-    </main>
+      </main>
+    </div>
   );
 }

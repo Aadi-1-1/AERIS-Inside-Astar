@@ -62,7 +62,16 @@ describe("explainExpansion", () => {
     it("lower f", () => expect(ruleFor(node(1, 2, 3, 1), node(2, 2, 4, 2))).toBe("lower-f"));
     it("f lower only at floating-point level", () =>
       expect(ruleFor(node(1, 2, 3, 1), node(2, 2 + 1e-15, 3, 2))).toBe("lower-f-precision"));
+    it("f lower by more than float noise but equal after display rounding", () =>
+      expect(ruleFor(node(1, 2, 3, 1), node(2, 2.0001, 3, 2))).toBe("lower-f-precision"));
+    it("f lower by float noise that straddles a rounding boundary is shown as lower", () =>
+      expect(ruleFor(node(1, 1.0004999999, 0, 1), node(2, 1.0005000001, 0, 2))).toBe("lower-f"));
     it("equal f, lower h", () => expect(ruleFor(node(1, 3, 2, 1), node(2, 2, 3, 2))).toBe("equal-f-lower-h"));
+    it("equal f, h lower only beyond display precision", () => {
+      const chosen: NodeSnapshot = { ...node(1, 0, 0, 1), g: 3.0002, h: 2, f: 5.0002 };
+      const runnerUp: NodeSnapshot = { ...node(2, 0, 0, 2), g: 3, h: 2.0002, f: 5.0002 };
+      expect(ruleFor(chosen, runnerUp)).toBe("equal-f-lower-h-precision");
+    });
     it("equal f and h, earlier discovery", () =>
       expect(ruleFor(node(1, 2, 3, 1), node(2, 2, 3, 2))).toBe("equal-f-h-earlier-discovery"));
   });
