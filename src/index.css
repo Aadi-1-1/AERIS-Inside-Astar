@@ -1,0 +1,258 @@
+/* Temporary functional styling for Phase 4. The final colour system comes later. */
+:root {
+  font-family: system-ui, sans-serif;
+  color: #1a1a1a;
+  background: #ffffff;
+}
+
+body {
+  margin: 0;
+}
+
+.app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+
+.grid {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #888;
+  touch-action: none;
+  user-select: none;
+}
+
+/* Simulation ~69%, decision panel ~31%; stacks on narrow screens. */
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 69fr) minmax(0, 31fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.decision-panel {
+  border: 1px solid #bbb;
+  padding: 12px;
+  font-size: 0.9rem;
+  min-height: 300px;
+}
+
+.decision-panel h2 {
+  font-size: 1.1rem;
+  margin: 4px 0 8px;
+}
+
+.decision-panel h3 {
+  font-size: 0.95rem;
+  margin: 14px 0 4px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-mode {
+  font-size: 0.75rem;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  color: #555;
+  margin: 0;
+}
+
+.node-coord {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin: 0 0 8px;
+}
+
+.values {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+
+.values dt {
+  font-weight: bold;
+}
+
+.values dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.formula,
+.ordering {
+  font-family: ui-monospace, monospace;
+  background: #f3f3f3;
+  padding: 4px 6px;
+}
+
+.improvement {
+  border-left: 3px solid #d17a00;
+  padding-left: 8px;
+  margin-top: 10px;
+}
+
+.improvement dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+
+.improvement dd {
+  margin: 0;
+}
+
+.history {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.selected-node,
+.selected-parent {
+  fill: none;
+  pointer-events: none;
+  stroke-width: 0.12;
+}
+
+.selected-node { stroke: #000000; }
+.selected-parent { stroke: #000000; stroke-dasharray: 0.2 0.12; }
+
+.bottom-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  align-items: flex-start;
+  border-top: 1px solid #ccc;
+  margin-top: 12px;
+  padding-top: 8px;
+}
+
+.cell {
+  stroke: #d0d0d0;
+  stroke-width: 0.03;
+}
+
+.cell-empty { fill: #ffffff; }
+.cell-blocked { fill: #333333; }
+.cell-closed { fill: #b9d3ee; }
+.cell-frontier { fill: #9be39b; }
+.cell-current { fill: #ffb347; }
+.cell-path { fill: #ffe14d; }
+
+.parent-links line {
+  stroke: #4a6a8a;
+  stroke-width: 0.05;
+  opacity: 0.6;
+}
+
+.final-path {
+  fill: none;
+  stroke: #d12f2f;
+  stroke-width: 0.18;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.endpoint text {
+  font-size: 0.6px;
+  font-weight: bold;
+  fill: #ffffff;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.endpoint-start rect,
+.legend-start { fill: #1f7a1f; }
+.endpoint-goal rect,
+.legend-goal { fill: #b01e8f; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  font-size: 0.85rem;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend svg {
+  width: 14px;
+  height: 14px;
+}
+
+.controls,
+.tool-selector {
+  margin: 8px 0;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+button[aria-pressed="true"] {
+  font-weight: bold;
+  outline: 2px solid #333;
+}
+
+.tool-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #ccc;
+}
+
+.hint {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.stats dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+
+.stats dt {
+  font-weight: bold;
+}
+
+.stats dd {
+  margin: 0;
+}
+
+.no-path {
+  color: #b00020;
+  font-weight: bold;
+}
