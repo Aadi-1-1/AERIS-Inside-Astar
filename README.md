@@ -65,7 +65,7 @@ A right-hand panel explains the search using only recorded trace data (`src/insp
 - **Selection:** a selected node stays selected while playback advances, and its values update each step. Reset, any map edit, or a new search clears the selection.
 - **Display:** values are rounded to 3 decimals for display only; stored values keep full precision.
 
-## Phase 6: premium interface (current)
+## Phase 6: premium interface
 
 A visual pass over the same simulation. The engine, the trace and the inspector logic are unchanged; motion is a presentation layer that only reads the displayed `SearchStep`.
 
@@ -76,6 +76,22 @@ A visual pass over the same simulation. The engine, the trace and the inspector 
 - **Path reconstruction:** after the goal is expanded, the sequence is goal reached → the stored parent chain is walked from goal to start (`SearchResult.path` reversed) → the route draws from start to goal and becomes the dominant element. The status line describes this as a reconstruction, not further search. With no route, nothing is drawn, the search settles, and the grid and panel say **No valid route found**.
 - **Display rounding:** the deciding comparison is still taken from exact values. If the deciding values look equal at 3 decimals, the panel says so instead of calling them tied or showing an unexplained "lower" value.
 - **Reduced motion:** with `prefers-reduced-motion`, transitions and animations jump to their end state and the completion sequence goes straight to the final route. All algorithm state stays visible.
+
+## Phase 7: Real-World Applications (current)
+
+A second page, **Real-World Applications** (`#/applications`, in the top navigation next to Simulation), looks at where A* is actually used and what that means for this simplified Build. The simulation stays mounted while you read; a running search is paused, not reset.
+
+- **Evidence classification:** every example is labelled with exactly one category:
+  - **Confirmed A* implementation:** primary documentation explicitly states A* is used.
+  - **Research / simulation demonstration:** A* is implemented, but this is not evidence of production use.
+  - **Related real-world navigation:** a real system whose documented planner is not A*.
+- **Main sources:**
+  - Hart, Nilsson & Raphael (1968), the original A* paper.
+  - The ROS 2 Nav2 Smac Planner docs: 2D A*, Hybrid-A* and State Lattice. *Confirmed.*
+  - A third-party PX4 SITL/Gazebo UAV demo whose own code runs A*. *Research/simulation; not PX4's standard stack.*
+  - ArduPilot's object-avoidance docs: BendyRuler, Dijkstra's, and Dijkstra's + BendyRuler. *Related, not A*.*
+- **Sourcing:** claims carry inline links to their source. The reference list records what each source supports and what it does not show. The page also lists claims it deliberately does not make, such as "Zipline/Wing/DJI use A*" or "PX4/ArduPilot use A*".
+- **Code layout:** source data is in `src/applications/sources.ts` and the page in `src/applications/`. Routing is a small hash router in `src/site/`.
 
 ## Running
 
