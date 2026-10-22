@@ -69,7 +69,8 @@ export default function App({ active = true }: Props) {
         <div>
           <h1 className="sr-only">A* simulation</h1>
           <p className="subtitle">
-            Watch A* search a grid one expansion at a time. Every frame is replayed from the engine's recorded trace.
+            Watch A* find the shortest route from <strong>S</strong> to <strong>G</strong>, one decision at a time. Every
+            frame is replayed from the real search.
           </p>
         </div>
       </header>

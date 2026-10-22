@@ -77,7 +77,7 @@ describe("Real-World Applications page", () => {
     const body = text(html);
     expect(body).not.toMatch(/always a shortest one/);
     expect(body).not.toMatch(/guaranteed to return a minimum-cost path/);
-    expect(body).toMatch(/checked independently against a separate Dijkstra solver/);
+    expect(body).toMatch(/check every route's cost against a separate Dijkstra solver/);
   });
 
   it("the ArduPilot case names Dijkstra's and BendyRuler and is not presented as A*", () => {

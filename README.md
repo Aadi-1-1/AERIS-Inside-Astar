@@ -105,6 +105,11 @@ An end-to-end audit of the Build, run against the production bundle in Chromium 
   - A table-of-contents link to the section already in the URL now scrolls.
   - ArduPilot links use the canonical `ardupilot.org` host.
   - Nav2 robot-type claims now cite the page that states them.
+- **Audience pass:** copy was rewritten for newcomers to pathfinding, with no new features and no changes to the motion system.
+  - The simulator says up front that A* is looking for the shortest route from S to G. Before a search, the panel explains g, h, f, frontier and parent.
+  - Duplicated statistics were removed.
+  - The no-route banner now sits under the grid instead of over it.
+  - The Applications page opens with a five-point summary. A redundant planner table and repeated caveats were removed, and each source's evidence notes are folded under a disclosure.
 - **New tests:**
   - Each QA map matches the reference Dijkstra.
   - Every expanded node's `g` equals its true shortest distance. This makes never reopening closed nodes safe.
