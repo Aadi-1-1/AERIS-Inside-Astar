@@ -77,7 +77,7 @@ A visual pass over the same simulation. The engine, the trace and the inspector 
 - **Display rounding:** the deciding comparison is still taken from exact values. If the deciding values look equal at 3 decimals, the panel says so instead of calling them tied or showing an unexplained "lower" value.
 - **Reduced motion:** with `prefers-reduced-motion`, transitions and animations jump to their end state and the completion sequence goes straight to the final route. All algorithm state stays visible.
 
-## Phase 7: Real-World Applications (current)
+## Phase 7: Real-World Applications
 
 A second page, **Real-World Applications** (`#/applications`, in the top navigation next to Simulation), looks at where A* is actually used and what that means for this simplified Build. The simulation stays mounted while you read; a running search is paused, not reset.
 
@@ -92,6 +92,24 @@ A second page, **Real-World Applications** (`#/applications`, in the top navigat
   - ArduPilot's object-avoidance docs: BendyRuler, Dijkstra's, and Dijkstra's + BendyRuler. *Related, not A*.*
 - **Sourcing:** claims carry inline links to their source. The reference list records what each source supports and what it does not show. The page also lists claims it deliberately does not make, such as "Zipline/Wing/DJI use A*" or "PX4/ArduPilot use A*".
 - **Code layout:** source data is in `src/applications/sources.ts` and the page in `src/applications/`. Routing is a small hash router in `src/site/`.
+
+## Phase 8: quality review (current)
+
+An end-to-end audit of the Build, run against the production bundle in Chromium (Playwright), with no new features. `src/algorithm/` was reviewed and not changed.
+
+- **Verified:** engine rules and A* vs Dijkstra agreement; grid cells, parent links and one-shot animations against the trace at sampled steps of five maps; inspector values before and after a real `improved` event; Start/Pause/Resume/Step/Reset and all four speeds; editing rules; routing, deep links and Back/Forward during a running search; 1440/1024/768 px layouts; keyboard focus, contrast and reduced motion; console and network errors; 4× playback performance.
+- **QA maps:** `src/qa/scenarios.ts` holds four fixed 32×20 maps (Open Terrain, Mountain Pass, Dense Obstacles, No Route). These are test fixtures, not UI presets.
+- **Fixes:**
+  - The Applications page no longer states optimality more broadly than this Build supports.
+  - The small "faint" label colour was raised to meet WCAG AA contrast.
+  - A table-of-contents link to the section already in the URL now scrolls.
+  - ArduPilot links use the canonical `ardupilot.org` host.
+  - Nav2 robot-type claims now cite the page that states them.
+- **New tests:**
+  - Each QA map matches the reference Dijkstra.
+  - Every expanded node's `g` equals its true shortest distance. This makes never reopening closed nodes safe.
+  - The octile heuristic is consistent for every move.
+  - A regression check on the optimality wording.
 
 ## Running
 
@@ -109,5 +127,7 @@ The tests cover open grids, obstacle detours, diagonal cost, corner cutting, unr
 This Build currently optimizes path length on an abstract 2D grid. It is not a complete autonomous-drone navigation system.
 
 - There is no terrain weighting, energy, wind, battery or vehicle dynamics.
+- The open set compares exact floating-point `f` values. Two routes of equal true length can differ by less than 10⁻⁹, and that difference, not the `h` tie-break, can decide which node is expanded next. On open maps this widens exploration. Route costs are unaffected, and the inspector says when this happens.
+- The grid is operated with a pointer. The controls and the decision panel are keyboard-accessible, but individual cells cannot be inspected or edited from the keyboard.
 - There is no backward playback. Desktop is the primary layout; narrow screens get a stacked layout.
 - Every step stores a full snapshot of the frontier and closed set. This is fine for teaching-sized grids, but it is not meant for very large maps.

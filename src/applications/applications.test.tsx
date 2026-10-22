@@ -41,8 +41,8 @@ describe("Real-World Applications page", () => {
     const required = [
       "https://ieeexplore.ieee.org/document/4082128",
       "https://docs.nav2.org/rolling/configuration_and_development/configuration_guide/planners_plugins/smac/",
-      "https://docs.ardupilot.org/copter/docs/common-object-avoidance-landing-page.html",
-      "https://en.ardupilot.org/copter/docs/common-oa-dijkstrabendyruler.html",
+      "https://ardupilot.org/copter/docs/common-object-avoidance-landing-page.html",
+      "https://ardupilot.org/copter/docs/common-oa-dijkstrabendyruler.html",
       "https://github.com/Xieyizhou/uav-path-planning-demo",
     ];
     for (const url of required) expect(html).toContain(`href="${url}"`);
@@ -71,6 +71,13 @@ describe("Real-World Applications page", () => {
       const before = body.slice(Math.max(0, match.index! - 60), match.index);
       expect(before).toMatch(/That |not |n't|proof that /);
     }
+  });
+
+  it("states optimality only as far as this Build supports it", () => {
+    const body = text(html);
+    expect(body).not.toMatch(/always a shortest one/);
+    expect(body).not.toMatch(/guaranteed to return a minimum-cost path/);
+    expect(body).toMatch(/checked independently against a separate Dijkstra solver/);
   });
 
   it("the ArduPilot case names Dijkstra's and BendyRuler and is not presented as A*", () => {

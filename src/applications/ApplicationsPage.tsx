@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type MouseEvent, type ReactNode } from "react";
 import { sectionHref } from "../site/routes";
 import { CASE_STUDIES, CATEGORIES, EXCLUDED_CLAIMS, SOURCES, SOURCE_ORDER, type EvidenceCategory, type SourceId } from "./sources";
 import "./applications.css";
@@ -47,7 +47,7 @@ export function ApplicationsPage({ section }: Props) {
           <ol>
             {SECTIONS.map((s, i) => (
               <li key={s.id}>
-                <a href={sectionHref(s.id)}>
+                <a href={sectionHref(s.id)} onClick={(e) => rescrollIfCurrent(e, s.id)}>
                   <span className="mono">{String(i + 1).padStart(2, "0")}</span> {s.label}
                 </a>
               </li>
@@ -68,6 +68,16 @@ export function ApplicationsPage({ section }: Props) {
 }
 
 /* ---------------------------------------------------------------- shared */
+
+/**
+ * A link to the section already in the URL changes no hash, so no route update would scroll to
+ * it. Scroll directly instead, so the link still works after the reader has scrolled away.
+ */
+function rescrollIfCurrent(event: MouseEvent<HTMLAnchorElement>, id: string) {
+  if (window.location.hash !== sectionHref(id)) return;
+  event.preventDefault();
+  document.getElementById(id)?.scrollIntoView({ block: "start" });
+}
 
 export function EvidenceBadge({ category }: { category: EvidenceCategory }) {
   return (
@@ -194,9 +204,11 @@ function Origins() {
             optimality property for that family of searches.
           </p>
           <p>
-            The key result: if the estimate never overestimates the true remaining cost, the search is guaranteed to
-            return a minimum-cost path. Our octile heuristic satisfies that condition for 8-direction movement, which is
-            why the simulator's route is always a shortest one.
+            The paper's result depends on conditions on the heuristic and on how the search handles revisited nodes, so
+            we only claim what holds for this Build. Under its movement model (8 directions, cost 1 orthogonally and √2
+            diagonally, no corner cutting) the octile heuristic never overestimates and is consistent. The costs of the
+            routes our engine returns are also checked independently against a separate Dijkstra solver in the test
+            suite.
           </p>
         </div>
         <figure className="formula-card" aria-label="The A* evaluation function: f of n equals g of n plus h of n">
@@ -233,8 +245,8 @@ function Nav2Case() {
       state: "(x, y) costmap cells",
       body: (
         <>
-          A “cost-aware holonomic A*” for circular differential-drive and omnidirectional robots <Cite id="nav2Smac2d" />,
-          using an 8-connected neighbourhood <Cite id="smacReadme" />.
+          A “cost-aware holonomic A*” <Cite id="nav2Smac2d" /> for circular differential-drive and omnidirectional robots{" "}
+          <Cite id="nav2Smac" />, using an 8-connected neighbourhood <Cite id="smacReadme" />.
         </>
       ),
       note: "Closest to AERIS",
@@ -244,8 +256,8 @@ function Nav2Case() {
       state: "(x, y, heading)",
       body: (
         <>
-          An SE2 planner for Ackermann, car-like and legged robots. It searches with Dubin or Reeds-Shepp motion models,
-          72 heading bins by default and a minimum turning radius <Cite id="nav2SmacHybrid" />.
+          An SE2 planner for car-like (Ackermann) and legged robots <Cite id="nav2Smac" />. It searches with Dubin or
+          Reeds-Shepp motion models, 72 heading bins by default and a minimum turning radius <Cite id="nav2SmacHybrid" />.
         </>
       ),
       note: "Kinematically feasible",
@@ -484,7 +496,7 @@ function PlannerComparison() {
     {
       name: "A*",
       scope: "Global",
-      searches: "Graph search ordered by f = g + h. Finds a minimum-cost path when h never overestimates.",
+      searches: "Graph search ordered by f = g + h, where h estimates the remaining cost. Proven to return a minimum-cost path when h meets the paper's conditions.",
       documented: <Cite id="hart1968" />,
     },
     {
