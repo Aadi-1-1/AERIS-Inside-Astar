@@ -74,33 +74,38 @@ function ModeIndicator({ mode }: { mode: Mode | null }) {
 function IdleView() {
   return (
     <>
-      <h2 className="panel-title">Decision inspector</h2>
-      <p className="lede">Press Start or Step to run A*. This panel then explains each expansion from the recorded search trace.</p>
+      <h2 className="panel-title">How A* decides</h2>
+      <p className="lede">A* gives every cell it finds a score, then always explores the most promising one next.</p>
       <ul className="idle-notes">
         <li>
-          <strong>Live</strong> shows the node being expanded and why it was chosen.
+          <strong className="mono">g</strong> distance travelled from S
         </li>
         <li>
-          <strong>Inspect</strong> any discovered cell to see its values and history.
+          <strong className="mono">h</strong> estimate of the distance left to G, as if there were no walls
         </li>
         <li>
-          <strong>Summary</strong> appears when the search ends.
+          <strong className="mono">f = g + h</strong> the score: lowest goes first
         </li>
       </ul>
+      <p className="muted small">
+        Cells found but not yet explored form the <strong>frontier</strong>. Each step, A* <em>expands</em> the frontier cell
+        with the lowest f: it checks that cell's neighbours and scores them. Every cell remembers its <strong>parent</strong>,
+        the cell it was reached from, so the route can be traced back.
+      </p>
+      <p className="muted small">Press Step to watch one decision, or Start to watch them all. Then click any searched cell to inspect it.</p>
     </>
   );
 }
 
 function ruleText(d: ExpansionDecision): string {
   const texts: Record<DecidingRule, string> = {
-    "only-node": "It was the only node in the frontier.",
+    "only-node": "It was the only cell in the frontier.",
     "lower-f": "It had the lowest f in the frontier.",
-    "lower-f-precision":
-      "Its exact f is lower than the runner-up's, although both round to the same 3-decimal value shown here. The ordering compares exact values.",
-    "equal-f-lower-h": "Its f is exactly equal to the runner-up's, so the lower h decided.",
+    "lower-f-precision": "Its exact f is lower than the runner-up's, though both show the same rounded value.",
+    "equal-f-lower-h": "Its f exactly tied the runner-up's, so the lower h (closer to G) won.",
     "equal-f-lower-h-precision":
-      "Its f is exactly equal to the runner-up's. Its exact h is lower, although both h values round to the same 3-decimal value shown here.",
-    "equal-f-h-earlier-discovery": "Its f and h are exactly equal to the runner-up's, so the earlier-discovered node went first.",
+      "Its f exactly tied the runner-up's. Its exact h is lower, though both show the same rounded value.",
+    "equal-f-h-earlier-discovery": "Its f and h exactly tied the runner-up's, so the cell found first won.",
   };
   return texts[d.rule];
 }
@@ -112,7 +117,7 @@ function exactNote(d: ExpansionDecision): string | null {
   if (!key) return null;
   const a = d.node[key];
   const b = d.runnerUp[key];
-  if (Math.abs(a - b) < 1e-9) return `The ${key} values differ only by floating-point rounding (less than 10⁻⁹).`;
+  if (Math.abs(a - b) < 1e-9) return "The difference is under 10⁻⁹: floating-point rounding. A* compares exact values.";
   return `Exact ${key}: ${formatExact(a)} vs ${formatExact(b)}.`;
 }
 
@@ -154,10 +159,6 @@ function LiveView({
             </span>
           </p>
         )}
-        <p className="muted small">
-          The frontier held {decision.frontierSizeBefore} {decision.frontierSizeBefore === 1 ? "node" : "nodes"} before this
-          expansion.
-        </p>
       </Section>
 
       <Section title="Neighbours this step">
@@ -183,12 +184,12 @@ function NeighbourCounts({ motion }: { motion: StepMotion }) {
   const items: [string, number][] = [
     ["discovered", c.discovered],
     ["cheaper path", c.improved],
-    ["no improvement", c.unchanged],
+    ["no cheaper path", c.unchanged],
     ["already explored", c["already-closed"]],
     ["blocked", c.blocked + c["corner-blocked"]],
   ];
   const shown = items.filter(([, n]) => n > 0);
-  if (shown.length === 0) return <p className="muted small">The goal was expanded; its neighbours are not evaluated.</p>;
+  if (shown.length === 0) return <p className="muted small">This is the goal, so the search stops here.</p>;
   return (
     <ul className="chips">
       {shown.map(([label, n]) => (
@@ -202,9 +203,9 @@ function NeighbourCounts({ motion }: { motion: StepMotion }) {
 
 const STATUS_TEXT: Record<NodeStatus, [string, string]> = {
   undiscovered: ["Undiscovered", "Not yet seen by the search."],
-  frontier: ["Frontier", "Open: discovered, waiting to be expanded."],
+  frontier: ["Frontier", "Found, waiting to be expanded."],
   current: ["Current", "Being expanded at this step."],
-  explored: ["Explored", "Closed: already expanded."],
+  explored: ["Explored", "Already expanded."],
 };
 
 function InspectView({
@@ -287,11 +288,11 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 function CostEquation({ node }: { node: NodeSnapshot }) {
   return (
     <div className="equation" role="group" aria-label={`g ${formatCost(node.g)} plus h ${formatCost(node.h)} equals f ${formatCost(node.f)}`}>
-      <Term label="g" hint="cost so far" value={node.g} />
+      <Term label="g" hint="travelled from S" value={node.g} />
       <span className="op" aria-hidden="true">+</span>
-      <Term label="h" hint="estimate to goal" value={node.h} />
+      <Term label="h" hint="estimate to G" value={node.h} />
       <span className="op" aria-hidden="true">=</span>
-      <Term label="f" hint="priority" value={node.f} emphasis />
+      <Term label="f" hint="score, lowest first" value={node.f} emphasis />
     </div>
   );
 }
@@ -380,7 +381,6 @@ function SummaryView({ result }: { result: SearchResult }) {
     ["Expanded nodes", stats.expandedNodes],
     ["Discovered nodes", stats.discoveredNodes],
     ["Max frontier size", stats.maxFrontierSize],
-    ["Search steps", stats.steps],
   ];
   return (
     <>
@@ -391,8 +391,8 @@ function SummaryView({ result }: { result: SearchResult }) {
       <h2 className="panel-title">{found ? "Search complete" : "Search exhausted"}</h2>
       <p className="lede">
         {found
-          ? "The goal was expanded, so A* stopped. The route was rebuilt by following stored parent links from the goal back to the start."
-          : "The frontier emptied before the goal was reached. Every reachable cell was explored; no route is drawn because none exists."}
+          ? "A* stopped as soon as it expanded G. The route was then rebuilt by following parent links from G back to S."
+          : "The frontier ran out before reaching G: every reachable cell was explored, so no route exists."}
       </p>
       <dl className="summary-list">
         {rows.map(([label, value]) => (
@@ -408,7 +408,7 @@ function SummaryView({ result }: { result: SearchResult }) {
           <p className="mono small">{reconstructionChain(result.path).map(formatCoord).join(" → ")}</p>
         </details>
       )}
-      <p className="muted small">Choose the Inspect tool and click any explored or frontier cell to inspect it.</p>
+      <p className="muted small">With the Inspect tool, click any explored or frontier cell to see its values and history.</p>
     </>
   );
 }

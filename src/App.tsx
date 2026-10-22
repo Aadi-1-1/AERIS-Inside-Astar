@@ -50,13 +50,13 @@ export default function App({ active = true }: Props) {
     }
   };
 
-  // Loading a search switches to Inspect so clicks cannot accidentally edit (and discard) it;
-  // Reset returns to editing.
   const playing = playback.status === "playing";
   useEffect(() => {
     if (!active && playing) dispatch({ type: "pause" });
   }, [active, playing, dispatch]);
 
+  // Loading a search switches to Inspect so clicks cannot accidentally edit (and discard) it;
+  // Reset returns to editing.
   const handlePlayback = (action: PlaybackAction) => {
     if ((action.type === "start" || action.type === "step") && playback.status === "idle") setTool("inspect");
     if (action.type === "reset" && tool === "inspect") setTool("obstacle");
@@ -69,7 +69,8 @@ export default function App({ active = true }: Props) {
         <div>
           <h1 className="sr-only">A* simulation</h1>
           <p className="subtitle">
-            Watch A* search a grid one expansion at a time. Every frame is replayed from the engine's recorded trace.
+            Watch A* find the shortest route from <strong>S</strong> to <strong>G</strong>, one decision at a time. Every
+            frame is replayed from the real search.
           </p>
         </div>
       </header>

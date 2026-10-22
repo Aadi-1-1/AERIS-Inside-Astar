@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type MouseEvent, type ReactNode } from "react";
 import { sectionHref } from "../site/routes";
 import { CASE_STUDIES, CATEGORIES, EXCLUDED_CLAIMS, SOURCES, SOURCE_ORDER, type EvidenceCategory, type SourceId } from "./sources";
 import "./applications.css";
@@ -38,16 +38,27 @@ export function ApplicationsPage({ section }: Props) {
           Where A* meets the real world
         </h1>
         <p className="rwa-lede">
-          Our simulator recreates one well-established pathfinding algorithm on a small, perfectly known grid. Real robots
-          and drones plan under far more constraints, and they do not all use A*. This page separates what we could verify
-          in primary documentation from what we could not.
+          AERIS shows A* on a small, perfectly known grid. Here is how that connects to real robots and drones, using only
+          what we could verify in primary sources.
         </p>
+        <section className="short-version" aria-labelledby="short-version-title">
+          <h2 id="short-version-title" className="eyebrow">
+            The short version
+          </h2>
+          <ol>
+            <li>A* is an established pathfinding algorithm, first published in 1968.</li>
+            <li>It is genuinely used in real robot planners, such as ROS 2 Nav2's Smac Planner.</li>
+            <li>Autonomous drones don't all use A*: ArduPilot's documented path planners are Dijkstra's and BendyRuler.</li>
+            <li>Real navigation adds sensors, changing maps, vehicle limits and safety margins that our grid leaves out.</li>
+            <li>AERIS recreates one core planning step, not a complete autonomous aircraft.</li>
+          </ol>
+        </section>
         <EvidenceKey />
         <nav className="rwa-toc" aria-label="On this page">
           <ol>
             {SECTIONS.map((s, i) => (
               <li key={s.id}>
-                <a href={sectionHref(s.id)}>
+                <a href={sectionHref(s.id)} onClick={(e) => rescrollIfCurrent(e, s.id)}>
                   <span className="mono">{String(i + 1).padStart(2, "0")}</span> {s.label}
                 </a>
               </li>
@@ -68,6 +79,16 @@ export function ApplicationsPage({ section }: Props) {
 }
 
 /* ---------------------------------------------------------------- shared */
+
+/**
+ * A link to the section already in the URL changes no hash, so no route update would scroll to
+ * it. Scroll directly instead, so the link still works after the reader has scrolled away.
+ */
+function rescrollIfCurrent(event: MouseEvent<HTMLAnchorElement>, id: string) {
+  if (window.location.hash !== sectionHref(id)) return;
+  event.preventDefault();
+  document.getElementById(id)?.scrollIntoView({ block: "start" });
+}
 
 export function EvidenceBadge({ category }: { category: EvidenceCategory }) {
   return (
@@ -189,14 +210,15 @@ function Origins() {
         <div className="prose">
           <p>
             A* was published in 1968 by Peter Hart, Nils Nilsson and Bertram Raphael in{" "}
-            <em>IEEE Transactions on Systems Science and Cybernetics</em> <Cite id="hart1968" />. Their contribution was
-            to fold a problem-specific estimate (a heuristic) into a formal theory of graph search, and to prove an
-            optimality property for that family of searches.
+            <em>IEEE Transactions on Systems Science and Cybernetics</em> <Cite id="hart1968" />. Their idea: guide the
+            search with an estimate of the distance still to go (a <em>heuristic</em>), and prove when that still finds the
+            cheapest route.
           </p>
           <p>
-            The key result: if the estimate never overestimates the true remaining cost, the search is guaranteed to
-            return a minimum-cost path. Our octile heuristic satisfies that condition for 8-direction movement, which is
-            why the simulator's route is always a shortest one.
+            The proof needs conditions on the estimate, so we only claim what holds here. With this Build's moves (8
+            directions, cost 1 straight and √2 diagonal, no corner cutting), our octile estimate never overestimates, even
+            one step at a time (it is <em>consistent</em>). Our tests also check every route's cost against a separate
+            Dijkstra solver.
           </p>
         </div>
         <figure className="formula-card" aria-label="The A* evaluation function: f of n equals g of n plus h of n">
@@ -206,15 +228,15 @@ function Origins() {
           <dl>
             <div>
               <dt className="mono term-g">g(n)</dt>
-              <dd>cost of the best known path from the start to n</dd>
+              <dd>distance travelled from the start to n, by the best route found so far</dd>
             </div>
             <div>
               <dt className="mono term-h">h(n)</dt>
-              <dd>estimate of the remaining cost from n to the goal</dd>
+              <dd>estimate of the distance left from n to the goal</dd>
             </div>
             <div>
               <dt className="mono">f(n)</dt>
-              <dd>the priority: the open node with the lowest f is expanded next</dd>
+              <dd>the score: the frontier cell with the lowest f is expanded next</dd>
             </div>
           </dl>
           <figcaption>
@@ -227,39 +249,27 @@ function Origins() {
 }
 
 function Nav2Case() {
-  const planners = [
+  const planners: { name: string; state: string; body: string; note: string; sources: SourceId[] }[] = [
     {
       name: "Smac 2D",
       state: "(x, y) costmap cells",
-      body: (
-        <>
-          A “cost-aware holonomic A*” for circular differential-drive and omnidirectional robots <Cite id="nav2Smac2d" />,
-          using an 8-connected neighbourhood <Cite id="smacReadme" />.
-        </>
-      ),
+      body: "A “cost-aware holonomic A*” for circular differential-drive and omnidirectional robots, moving between 8 neighbouring cells.",
       note: "Closest to AERIS",
+      sources: ["nav2Smac2d", "nav2Smac", "smacReadme"],
     },
     {
       name: "Hybrid-A*",
       state: "(x, y, heading)",
-      body: (
-        <>
-          An SE2 planner for Ackermann, car-like and legged robots. It searches with Dubin or Reeds-Shepp motion models,
-          72 heading bins by default and a minimum turning radius <Cite id="nav2SmacHybrid" />.
-        </>
-      ),
-      note: "Kinematically feasible",
+      body: "For car-like (Ackermann) and legged robots. It only follows motions the vehicle can drive (Dubin or Reeds-Shepp models) with a minimum turning radius.",
+      note: "Respects turning limits",
+      sources: ["nav2Smac", "nav2SmacHybrid"],
     },
     {
       name: "State Lattice",
       state: "(x, y, heading) via control sets",
-      body: (
-        <>
-          A lattice planner for arbitrarily shaped robots, built on the same templated A* search with control sets for
-          different drivetrains <Cite id="nav2Smac" />.
-        </>
-      ),
+      body: "For robots of any shape, using the same templated A* search with control sets for different drivetrains.",
       note: "Any robot shape",
+      sources: ["nav2Smac"],
     },
   ];
   return (
@@ -286,6 +296,11 @@ function Nav2Case() {
             </header>
             <p className="state mono">state: {p.state}</p>
             <p>{p.body}</p>
+            <p className="card-sources">
+              {p.sources.map((id) => (
+                <Cite key={id} id={id} />
+              ))}
+            </p>
           </article>
         ))}
       </div>
@@ -293,12 +308,10 @@ function Nav2Case() {
       <div className="callout">
         <h3>Why real planners add costs and kinematics</h3>
         <p>
-          In our Build a cell is either free or blocked, and the robot is a point that can step in 8 directions. Smac 2D
-          instead reads a <em>costmap</em> and steers away from high-cost areas. Its docs note that setting{" "}
-          <code>cost_travel_multiplier</code> to 0.0 “effectively disables steering away from obstacles and acts like a
-          naive binary search A*” <Cite id="nav2Smac2d" />. That “naive” mode is essentially what AERIS shows. A car-like
-          robot also cannot turn on the spot, so Hybrid-A* adds heading to the search and only follows motions the vehicle
-          can actually drive, with a minimum turning radius and penalties for reversing and turning{" "}
+          In AERIS a cell is free or blocked and the robot is a point. Smac 2D instead reads a <em>costmap</em> and steers
+          away from high-cost areas; with <code>cost_travel_multiplier</code> set to 0.0 it “acts like a naive binary
+          search A*” <Cite id="nav2Smac2d" />, which is essentially what AERIS shows. A car-like robot also cannot turn on
+          the spot, so Hybrid-A* adds heading to the search and penalises reversing and turning{" "}
           <Cite id="nav2SmacHybrid" />.
         </p>
       </div>
@@ -376,8 +389,7 @@ function UavDemoCase() {
 
       <p className="prose">
         The planner file implements a grid A* with an octile heuristic and √2 diagonal moves when diagonals are enabled,
-        the same cost model as our Build <Cite id="uavDemoPlanner" />. PX4 is the flight software that receives and flies
-        the waypoints; the A* runs in the project's own Python code before that.
+        the same cost model as our Build <Cite id="uavDemoPlanner" />.
       </p>
 
       <ProvesPanel
@@ -404,11 +416,10 @@ function ArduPilotCase() {
       <p className="prose">
         ArduPilot is open-source autopilot software for multicopters, planes, rovers and boats. For Copter, its object
         avoidance documentation lists Simple Object Avoidance, BendyRuler, Dijkstra's, and Dijkstra's with BendyRuler{" "}
-        <Cite id="ardupilotOA" />. A* is not among the documented path planners, and we do not describe ArduPilot's
-        avoidance stack as A*.
+        <Cite id="ardupilotOA" />. A* is not among the documented path planners.
       </p>
 
-      <div className="card-grid three">
+      <div className="card-grid two">
         <article className="planner-card">
           <header>
             <h3>BendyRuler</h3>
@@ -430,20 +441,13 @@ function ArduPilotCase() {
             avoiding objects sensed with lidar or proximity sensors” <Cite id="ardupilotDijkstra" />.
           </p>
         </article>
-        <article className="planner-card">
-          <header>
-            <h3>Dijkstra's + BendyRuler</h3>
-            <span className="pill mono">OA_TYPE = 3</span>
-          </header>
-          <p>
-            Dijkstra's plans around fences; if a proximity-sensed obstacle appears, navigation switches to BendyRuler, and
-            returns to Dijkstra's once the view is clear <Cite id="ardupilotDijkstraBendy" />.
-          </p>
-        </article>
       </div>
 
       <figure className="decision-flow">
-        <figcaption>Dijkstra's + BendyRuler, as described in ArduPilot's documentation (AUTO, GUIDED and RTL modes)</figcaption>
+        <figcaption>
+          Combined: Dijkstra's + BendyRuler (<span className="mono">OA_TYPE = 3</span>; AUTO, GUIDED and RTL modes){" "}
+          <Cite id="ardupilotDijkstraBendy" />
+        </figcaption>
         <ol>
           <li>
             <strong>Dijkstra's</strong>
@@ -465,73 +469,13 @@ function ArduPilotCase() {
       <div className="callout">
         <h3>Why this matters for our Build</h3>
         <p>
-          ArduPilot's own explanation is that Dijkstra's can find the shortest path around complex fences, but “due to the
-          computational complexity it cannot be used for to avoid Proximity based obstacles”, so a fast local method
-          handles those <Cite id="ardupilotDijkstraBendy" />. ArduPilot therefore splits planning into a global layer
-          and a reactive local layer. Our simulator only models the global layer, with a map that never changes.
-          Dijkstra's algorithm is the same search as A* with h(n) = 0. The docs do not say why a heuristic was not used,
-          so we do not guess.
+          ArduPilot says Dijkstra's finds the shortest path around fences but, “due to the computational complexity”,
+          cannot handle obstacles sensed in flight, so a fast local method takes over <Cite id="ardupilotDijkstraBendy" />.
+          That is a split into global and local planning; AERIS models only the global part, on a map that never changes.
+          Dijkstra's is the same search as A* with h = 0. The docs don't say why no heuristic is used, so we don't guess.
         </p>
       </div>
-
-      <PlannerComparison />
     </Section>
-  );
-}
-
-function PlannerComparison() {
-  const rows: { name: string; scope: string; searches: string; documented: ReactNode }[] = [
-    {
-      name: "A*",
-      scope: "Global",
-      searches: "Graph search ordered by f = g + h. Finds a minimum-cost path when h never overestimates.",
-      documented: <Cite id="hart1968" />,
-    },
-    {
-      name: "Dijkstra's",
-      scope: "Global",
-      searches: "Graph search ordered by g alone (A* with h = 0). ArduPilot uses it for the shortest path around fences.",
-      documented: <Cite id="ardupilotDijkstra" />,
-    },
-    {
-      name: "BendyRuler",
-      scope: "Local",
-      searches: "Probes directions around the vehicle for open space. Documented as not guaranteeing a shortest path.",
-      documented: <Cite id="ardupilotDijkstraBendy" />,
-    },
-    {
-      name: "Hybrid-A*",
-      scope: "Global",
-      searches: "A*-based search over position and heading with a vehicle motion model and turning radius.",
-      documented: <Cite id="nav2SmacHybrid" />,
-    },
-  ];
-  return (
-    <div className="table-wrap">
-      <table className="compare-table">
-        <caption>Planner comparison: documented characteristics only, no scores or rankings</caption>
-        <thead>
-          <tr>
-            <th scope="col">Planner</th>
-            <th scope="col">Scope</th>
-            <th scope="col">What it does</th>
-            <th scope="col">Source</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.name}>
-              <th scope="row">{r.name}</th>
-              <td>
-                <span className={`scope scope-${r.scope.toLowerCase()}`}>{r.scope}</span>
-              </td>
-              <td>{r.searches}</td>
-              <td>{r.documented}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }
 
@@ -568,9 +512,8 @@ function Constraints() {
         />
       </div>
       <p className="prose">
-        The rows below are things a real system <em>may</em> need. Not every system deals with every one. The examples
-        above touch on several: Smac adds costs and turning limits, ArduPilot adds a reactive local planner and safety
-        margins, and the UAV demo inflates obstacles and replans in simulation.
+        Not every real system needs every row below, but the examples above each add several: Smac adds costs and turning
+        limits, ArduPilot a reactive local planner, and the UAV demo obstacle inflation and replanning.
       </p>
       <div className="table-wrap">
         <table className="compare-table constraints-table">
@@ -603,19 +546,16 @@ function WhatAerisBuilt() {
       <div className="two-col">
         <div className="prose">
           <p>
-            AERIS recreates the core logic of A* in a controlled educational environment. It uses an open set ordered by f
-            = g + h, an octile heuristic, √2 diagonal moves without corner cutting, parent links and path reconstruction.
-            Every frame of the <a href="#/">simulation</a> is replayed from the engine's recorded search trace, so what you
-            see is what the algorithm actually did.
+            AERIS recreates the core of A*: a frontier ordered by f = g + h, an octile heuristic, √2 diagonal moves
+            without corner cutting, parent links and route reconstruction. Every frame of the <a href="#/">simulation</a>{" "}
+            is replayed from the real search, so what you see is what the algorithm actually did.
           </p>
           <div className="is-not">
             <h3>It is not</h3>
             <ul className="cross-list">
               <li>an autopilot or a flight controller;</li>
               <li>a complete drone planner (no perception, local avoidance or control);</li>
-              <li>a model of real drone energy, wind or flight physics;</li>
-              <li>proof that any delivery company uses A*;</li>
-              <li>proof that A* is the best planner for drones.</li>
+              <li>a model of real drone energy, wind or flight physics.</li>
             </ul>
           </div>
         </div>
@@ -661,16 +601,19 @@ function References() {
                   </a>
                 </p>
               )}
-              <dl className="ref-claims">
-                <div>
-                  <dt>Supports</dt>
-                  <dd>{s.supports}</dd>
-                </div>
-                <div>
-                  <dt>Does not show</dt>
-                  <dd>{s.doesNotShow}</dd>
-                </div>
-              </dl>
+              <details className="ref-details">
+                <summary>What it supports, and what it does not show</summary>
+                <dl className="ref-claims">
+                  <div>
+                    <dt>Supports</dt>
+                    <dd>{s.supports}</dd>
+                  </div>
+                  <div>
+                    <dt>Does not show</dt>
+                    <dd>{s.doesNotShow}</dd>
+                  </div>
+                </dl>
+              </details>
             </li>
           );
         })}

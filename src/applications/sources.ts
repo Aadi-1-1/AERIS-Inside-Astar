@@ -54,7 +54,7 @@ export const SOURCES: Record<SourceId, Source> = {
     url: "https://docs.nav2.org/rolling/configuration_and_development/configuration_guide/planners_plugins/smac/",
     sourceFile: `${NAV2_DOCS_SRC}/smac/index.md`,
     supports:
-      "“The Smac Planner plugin implements three A* based planning algorithms: 2D A*, Hybrid-A*, and State Lattice path planners”, all built on one templated A* search.",
+      "“The Smac Planner plugin implements three A* based planning algorithms: 2D A*, Hybrid-A*, and State Lattice path planners”, all built on one templated A* search. It also states the robot types each planner supports: circular differential-drive and omnidirectional (2D), car-like (Ackermann) and legged (Hybrid-A*), and arbitrary shapes (State Lattice).",
     doesNotShow:
       "That all ROS or Nav2 navigation uses A*. Nav2 offers other planner plugins, and each robot integrator chooses which to run.",
   },
@@ -86,7 +86,7 @@ export const SOURCES: Record<SourceId, Source> = {
     url: `${NAV2_DOCS_SRC}/smac/smac_hybrid/configuring_smac_hybrid.md`,
     supports:
       "Hybrid-A* searches with a DUBIN or REEDS_SHEPP motion model, 72 heading bins by default, and a minimum_turning_radius, with penalties for reversing, turning and high-cost cells.",
-    doesNotShow: "Anything about aerial vehicles; the robot types it documents are car-like, legged, differential and omnidirectional.",
+    doesNotShow: "Anything about aerial vehicles, or which robots in the field run this planner.",
   },
   nav2NavFn: {
     id: "nav2NavFn",
@@ -103,7 +103,7 @@ export const SOURCES: Record<SourceId, Source> = {
     short: "ArduPilot docs: Object Avoidance",
     title: "Object Avoidance (Copter)",
     publisher: "ArduPilot documentation",
-    url: "https://docs.ardupilot.org/copter/docs/common-object-avoidance-landing-page.html",
+    url: "https://ardupilot.org/copter/docs/common-object-avoidance-landing-page.html",
     sourceFile: `${ARDUPILOT_WIKI_SRC}/common-object-avoidance-landing-page.rst`,
     supports:
       "The documented avoidance types for Copter: Simple Object Avoidance, BendyRuler, Dijkstra's, and Dijkstra's with BendyRuler. A* is not listed.",
@@ -114,7 +114,7 @@ export const SOURCES: Record<SourceId, Source> = {
     short: "ArduPilot docs: Dijkstra's + BendyRuler",
     title: "Object Avoidance using Dijkstra's with BendyRuler",
     publisher: "ArduPilot documentation",
-    url: "https://en.ardupilot.org/copter/docs/common-oa-dijkstrabendyruler.html",
+    url: "https://ardupilot.org/copter/docs/common-oa-dijkstrabendyruler.html",
     sourceFile: `${ARDUPILOT_WIKI_SRC}/common-oa-dijkstrabendyruler.rst`,
     supports:
       "Dijkstra's plans the shortest path around fences; when a proximity-sensor obstacle is detected, navigation switches to BendyRuler, then resumes Dijkstra's. OA_TYPE = 3; AUTO, GUIDED and RTL modes.",

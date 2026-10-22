@@ -13,7 +13,6 @@ export function SimulationStats({ status, visual, result }: Props) {
   const finished = (status === "complete" || status === "no-path") && result;
   const items: [string, string | number][] = finished
     ? [
-        ["Steps", result.stats.steps],
         ["Expanded", result.stats.expandedNodes],
         ["Discovered", result.stats.discoveredNodes],
         ["Max frontier", result.stats.maxFrontierSize],

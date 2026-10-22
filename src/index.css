@@ -15,7 +15,7 @@
 
   --text: #e6ebf2;
   --text-muted: #8f9aab;
-  --text-faint: #5f6a7c;
+  --text-faint: #818c9e;
 
   --accent: #38bdf8;
   --accent-rgb: 56, 189, 248;
@@ -670,17 +670,15 @@ button {
   opacity: 0.75;
 }
 
+/* Sits under the grid rather than over it, so every explored cell stays visible. */
 .grid-banner {
-  position: absolute;
-  left: 50%;
-  top: 22px;
-  transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  max-width: calc(100% - 40px);
-  padding: 10px 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin-top: 8px;
+  padding: 8px 14px;
   border: 1px solid rgba(var(--warning-rgb), 0.45);
   border-radius: var(--radius);
   background: rgba(14, 18, 26, 0.92);
@@ -760,7 +758,9 @@ button {
   gap: 8px;
   color: var(--text-muted);
 }
-.idle-notes strong { color: var(--text); font-weight: 600; }
+.idle-notes strong { color: var(--text); font-weight: 600; margin-right: 8px; }
+.idle-notes + .muted { margin-top: 14px; }
+.subtitle strong { color: var(--text); font-weight: 600; }
 
 .panel-section {
   margin-top: 18px;
